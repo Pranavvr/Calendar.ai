@@ -1,0 +1,7 @@
+langgraph
+langchain-anthropic
+langchain-core
+google-auth-oauthlib
+google-api-python-client
+python-dotenv
+jupyter
