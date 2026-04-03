@@ -1,0 +1,11 @@
+.venv/
+.env
+token.json
+credentials.json
+__pycache__/
+*.pyc
+.git/
+.gitignore
+notebooks/
+*.ipynb
+.pytest_cache/
