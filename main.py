@@ -2,8 +2,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-from agent.graph import agent
-from config import RECURSION_LIMIT
+from agent.graph import agent # noqa: E402
+from config import RECURSION_LIMIT # noqa: E402
 
 
 def run(user_input: str):

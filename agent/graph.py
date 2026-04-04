@@ -8,7 +8,7 @@ from typing_extensions import TypedDict
 
 from tools.calendar_tools import get_calendar_events, get_free_slots, create_calendar_event
 from agent.prompts import get_system_prompt
-from config import MODEL_NAME, RECURSION_LIMIT
+from config import MODEL_NAME
 
 
 # 1. State
