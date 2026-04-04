@@ -1,10 +1,10 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-from fastapi import FastAPI
-from pydantic import BaseModel
-from agent.graph import agent
-from config import RECURSION_LIMIT
+from fastapi import FastAPI # noqa: E402
+from pydantic import BaseModel # noqa: E402
+from agent.graph import agent # noqa: E402
+from config import RECURSION_LIMIT # noqa: E402
 
 app = FastAPI(title="cal.ai", description="AI calendar scheduling agent")
 
