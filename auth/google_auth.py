@@ -1,30 +1,34 @@
-from pathlib import Path
+import asyncio
+import os
+import uuid
+
 from google.auth.transport.requests import Request
 from google.oauth2.credentials import Credentials
-from google_auth_oauthlib.flow import InstalledAppFlow
 from googleapiclient.discovery import build
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from db.models import GoogleCredentials
 
 SCOPES = ["https://www.googleapis.com/auth/calendar"]
-BASE_DIR = Path(__file__).parent.parent  # goes up from auth/ to root
+GOOGLE_TOKEN_URI = "https://oauth2.googleapis.com/token"
 
-TOKEN_PATH       = BASE_DIR / "token.json"
-CREDENTIALS_PATH = BASE_DIR / "credentials.json"
 
-def get_calendar_service():
-    creds = None
+async def get_calendar_service_for_user(user_id: uuid.UUID, db: AsyncSession):
+    creds_row = await db.get(GoogleCredentials, user_id)
+    if creds_row is None:
+        raise RuntimeError(f"No Google credentials stored for user {user_id}")
 
-    if TOKEN_PATH.exists():
-        creds = Credentials.from_authorized_user_file(str(TOKEN_PATH), SCOPES)
+    credentials = Credentials(
+        token=None,
+        refresh_token=creds_row.refresh_token,
+        token_uri=GOOGLE_TOKEN_URI,
+        client_id=os.environ["GOOGLE_CLIENT_ID"],
+        client_secret=os.environ["GOOGLE_CLIENT_SECRET"],
+        scopes=SCOPES,
+    )
 
-    if not creds or not creds.valid:
-        if creds and creds.expired and creds.refresh_token:
-            creds.refresh(Request())
-        else:
-            flow = InstalledAppFlow.from_client_secrets_file(str(CREDENTIALS_PATH), SCOPES)
-            creds = flow.run_local_server(port=0)
+    # google-auth uses a sync HTTP client. Run in a thread so we don't block
+    # the event loop during the token refresh round-trip.
+    await asyncio.to_thread(credentials.refresh, Request())
 
-        with open(TOKEN_PATH, "w") as f:
-            f.write(creds.to_json())
-
-    return build("calendar", "v3", credentials=creds)
-
+    return build("calendar", "v3", credentials=credentials)

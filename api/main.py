@@ -11,7 +11,7 @@ from pydantic import BaseModel  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
 from starlette.middleware.sessions import SessionMiddleware  # noqa: E402
 
-from agent.graph import agent  # noqa: E402
+from agent.graph import make_agent  # noqa: E402
 from auth.jwt import get_current_user_id  # noqa: E402
 from auth.oauth import router as oauth_router  # noqa: E402
 from config import RECURSION_LIMIT  # noqa: E402
@@ -64,12 +64,15 @@ async def me(
 
 
 @app.post("/schedule", response_model=ScheduleResponse)
-def schedule(request: ScheduleRequest):
-    # NOTE: still uses the single-user agent for now. Will be refactored to
-    # multi-user in the next chunk along with tools/calendar_tools.py.
-    result = ""
+async def schedule(
+    request: ScheduleRequest,
+    user_id: uuid.UUID = Depends(get_current_user_id),
+    db: AsyncSession = Depends(get_db),
+):
+    agent = await make_agent(user_id, db)
 
-    for chunk in agent.stream(
+    result = ""
+    async for chunk in agent.astream(
         {"messages": [{"role": "user", "content": request.message}]},
         stream_mode="values",
         config={"recursion_limit": RECURSION_LIMIT},

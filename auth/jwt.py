@@ -8,7 +8,8 @@ from fastapi import Cookie, HTTPException, status
 JWT_SECRET = os.environ["JWT_SECRET"]
 JWT_ALGORITHM = "HS256"
 JWT_TTL_HOURS = int(os.environ.get("JWT_TTL_HOURS", "168"))  # 7 days
-SESSION_COOKIE_NAME = "session"
+# Distinct from Starlette SessionMiddleware's "session" cookie used for OAuth state.
+SESSION_COOKIE_NAME = "cal_ai_session"
 
 
 def create_session_token(user_id: uuid.UUID) -> str:
@@ -34,10 +35,12 @@ def verify_session_token(token: str) -> uuid.UUID:
     return uuid.UUID(claims["sub"])
 
 
-async def get_current_user_id(session: str | None = Cookie(default=None)) -> uuid.UUID:
-    if session is None:
+async def get_current_user_id(
+    session_token: str | None = Cookie(default=None, alias=SESSION_COOKIE_NAME),
+) -> uuid.UUID:
+    if session_token is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Not authenticated",
         )
-    return verify_session_token(session)
+    return verify_session_token(session_token)
