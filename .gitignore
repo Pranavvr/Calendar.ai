@@ -12,3 +12,4 @@ __pycache__/
 # Local-only notebook drafts (not for git history)
 notebooks/cloud-architecture.md
 notebooks/langgraph-fundamentals.md
+notebooks/phase-1-concepts.md
