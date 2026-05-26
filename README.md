@@ -22,7 +22,6 @@ api/      FastAPI app (POST /schedule, GET /health)
 auth/     Google OAuth flow (token caching to token.json)
 tools/    Calendar tools exposed to the agent
 config.py Timezone, model, day window, buffer, recursion limit
-main.py   CLI entrypoint
 ```
 
 ## Setup
@@ -37,11 +36,6 @@ main.py   CLI entrypoint
    ```
 
 ## Run
-
-CLI:
-```sh
-python main.py
-```
 
 HTTP API:
 ```sh
