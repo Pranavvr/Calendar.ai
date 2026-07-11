@@ -1,5 +1,15 @@
+output "public_url" {
+  description = "The HTTPS URL to use — CloudFront in front of the ALB. This is what goes in Google OAuth."
+  value       = "https://${aws_cloudfront_distribution.cal_ai.domain_name}"
+}
+
+output "cloudfront_domain" {
+  description = "CloudFront's *.cloudfront.net domain (HTTPS)."
+  value       = aws_cloudfront_distribution.cal_ai.domain_name
+}
+
 output "alb_dns_name" {
-  description = "Public DNS name of the ALB. Visit http://<this>/auth/google/login to log in."
+  description = "Direct ALB DNS (HTTP only). Internal reference; use public_url instead."
   value       = aws_lb.cal_ai.dns_name
 }
 
@@ -20,7 +30,7 @@ output "database_url_secret_arn" {
 
 output "google_redirect_uri" {
   description = "Add THIS to your Google OAuth client's authorized redirect URIs."
-  value       = "http://${aws_lb.cal_ai.dns_name}/auth/google/callback"
+  value       = "https://${aws_cloudfront_distribution.cal_ai.domain_name}/auth/google/callback"
 }
 
 output "ecs_cluster_name" {

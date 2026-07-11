@@ -83,7 +83,8 @@ resource "aws_secretsmanager_secret_version" "database_url" {
   secret_string = local.database_url
 }
 
-# GOOGLE_REDIRECT_URI depends on the ALB DNS name, which we know at Terraform time.
+# GOOGLE_REDIRECT_URI uses the CloudFront domain (HTTPS), because Google requires
+# HTTPS on redirect URIs when sensitive scopes (Calendar) are involved.
 resource "aws_secretsmanager_secret" "google_redirect_uri" {
   name                    = "${var.project_name}/google-redirect-uri"
   recovery_window_in_days = 0
@@ -91,5 +92,5 @@ resource "aws_secretsmanager_secret" "google_redirect_uri" {
 
 resource "aws_secretsmanager_secret_version" "google_redirect_uri" {
   secret_id     = aws_secretsmanager_secret.google_redirect_uri.id
-  secret_string = "http://${aws_lb.cal_ai.dns_name}/auth/google/callback"
+  secret_string = "https://${aws_cloudfront_distribution.cal_ai.domain_name}/auth/google/callback"
 }
