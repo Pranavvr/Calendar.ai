@@ -15,9 +15,9 @@ if [ ! -f "$PROJECT_ROOT/.env" ]; then
     exit 1
 fi
 
-export TF_VAR_google_client_id=$(grep '^GOOGLE_CLIENT_ID=' "$PROJECT_ROOT/.env" | cut -d= -f2-)
-export TF_VAR_google_client_secret=$(grep '^GOOGLE_CLIENT_SECRET=' "$PROJECT_ROOT/.env" | cut -d= -f2-)
-export TF_VAR_openai_api_key=$(grep '^OPENAI_API_KEY=' "$PROJECT_ROOT/.env" | cut -d= -f2-)
+export TF_VAR_google_client_id=$(grep '^GOOGLE_CLIENT_ID=' "$PROJECT_ROOT/.env" | cut -d= -f2- | tr -d '[:space:]')
+export TF_VAR_google_client_secret=$(grep '^GOOGLE_CLIENT_SECRET=' "$PROJECT_ROOT/.env" | cut -d= -f2- | tr -d '[:space:]')
+export TF_VAR_openai_api_key=$(grep '^OPENAI_API_KEY=' "$PROJECT_ROOT/.env" | cut -d= -f2- | tr -d '[:space:]')
 
 echo ""
 echo "==========================================================="

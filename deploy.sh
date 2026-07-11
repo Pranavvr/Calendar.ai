@@ -24,9 +24,11 @@ if [ ! -f "$PROJECT_ROOT/.env" ]; then
     exit 1
 fi
 
-export TF_VAR_google_client_id=$(grep '^GOOGLE_CLIENT_ID=' "$PROJECT_ROOT/.env" | cut -d= -f2-)
-export TF_VAR_google_client_secret=$(grep '^GOOGLE_CLIENT_SECRET=' "$PROJECT_ROOT/.env" | cut -d= -f2-)
-export TF_VAR_openai_api_key=$(grep '^OPENAI_API_KEY=' "$PROJECT_ROOT/.env" | cut -d= -f2-)
+# tr strip trailing whitespace: .env values sometimes have trailing newlines/spaces
+# and Google's OAuth rejects the client_id if it has trailing space in the URL.
+export TF_VAR_google_client_id=$(grep '^GOOGLE_CLIENT_ID=' "$PROJECT_ROOT/.env" | cut -d= -f2- | tr -d '[:space:]')
+export TF_VAR_google_client_secret=$(grep '^GOOGLE_CLIENT_SECRET=' "$PROJECT_ROOT/.env" | cut -d= -f2- | tr -d '[:space:]')
+export TF_VAR_openai_api_key=$(grep '^OPENAI_API_KEY=' "$PROJECT_ROOT/.env" | cut -d= -f2- | tr -d '[:space:]')
 
 for var in TF_VAR_google_client_id TF_VAR_google_client_secret TF_VAR_openai_api_key; do
     if [ -z "${!var:-}" ]; then
