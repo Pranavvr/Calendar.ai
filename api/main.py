@@ -7,6 +7,7 @@ load_dotenv()
 import uuid  # noqa: E402
 
 from fastapi import Depends, FastAPI, HTTPException  # noqa: E402
+from fastapi.responses import HTMLResponse  # noqa: E402
 from pydantic import BaseModel  # noqa: E402
 from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
 from starlette.middleware.sessions import SessionMiddleware  # noqa: E402
@@ -40,6 +41,49 @@ class MeResponse(BaseModel):
     email: str
     name: str | None
     picture_url: str | None
+
+
+@app.get("/", response_class=HTMLResponse)
+def home():
+    return """
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>cal.ai</title>
+      <meta charset="utf-8">
+      <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+               max-width: 640px; margin: 60px auto; padding: 0 24px; color: #222; }
+        h1 { margin-bottom: 8px; }
+        p.tagline { color: #666; margin-top: 0; }
+        .actions { display: flex; flex-direction: column; gap: 12px; margin: 32px 0; }
+        a.button {
+          display: inline-block; padding: 12px 20px; background: #4285f4;
+          color: white; text-decoration: none; border-radius: 6px;
+          font-weight: 500; text-align: center;
+        }
+        a.button:hover { background: #3367d6; }
+        a.secondary { color: #4285f4; text-decoration: none; }
+        a.secondary:hover { text-decoration: underline; }
+        .links { display: flex; gap: 20px; margin-top: 24px; font-size: 14px; }
+      </style>
+    </head>
+    <body>
+      <h1>cal.ai</h1>
+      <p class="tagline">AI-powered calendar scheduling agent.</p>
+
+      <div class="actions">
+        <a class="button" href="/auth/google/login">Sign in with Google</a>
+      </div>
+
+      <div class="links">
+        <a class="secondary" href="/me">View my profile</a>
+        <a class="secondary" href="/docs">API docs</a>
+        <a class="secondary" href="/health">Health</a>
+      </div>
+    </body>
+    </html>
+    """
 
 
 @app.get("/health")
