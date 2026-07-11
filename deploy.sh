@@ -56,8 +56,8 @@ aws --profile "$AWS_PROFILE" ecr get-login-password --region "$AWS_REGION" \
 # Apple Silicon, docker builds an ARM image that Fargate can't run.
 cd "$PROJECT_ROOT"
 docker build --platform linux/amd64 -t cal-ai:latest .
-docker tag cal-ai:latest "$ECR_URL:latest"
-docker push "$ECR_URL:latest"
+docker tag cal-ai:latest "${ECR_URL}:latest"
+docker push "${ECR_URL}:latest"
 
 # --- Step 3: Full terraform apply ---
 echo ""
