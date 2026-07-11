@@ -22,6 +22,11 @@ resource "aws_cloudfront_distribution" "cal_ai" {
       https_port             = 443
       origin_protocol_policy = "http-only" # ALB is HTTP; CloudFront speaks HTTPS to browsers
       origin_ssl_protocols   = ["TLSv1.2"]
+      # Bump the origin timeout above the default 30s. Agent runs (multiple LLM
+      # calls + Google Calendar API round-trips) can take 40-60s. 60s is the
+      # max without a service quota increase.
+      origin_read_timeout      = 60
+      origin_keepalive_timeout = 60
     }
   }
 
