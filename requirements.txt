@@ -10,3 +10,9 @@ jupyter
 pytest
 fastapi
 uvicorn
+sqlalchemy[asyncio]
+asyncpg
+alembic
+authlib
+httpx
+itsdangerous

@@ -1,9 +1,15 @@
 .venv/
 .env
 token.json
+token-from-ec2-backup.json
 credentials.json
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
 *.egg-info/
 .DS_Store
+
+# Local-only notebook drafts (not for git history)
+notebooks/cloud-architecture.md
+notebooks/langgraph-fundamentals.md
+notebooks/phase-1-concepts.md
