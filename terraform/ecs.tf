@@ -23,7 +23,7 @@ resource "aws_ecs_task_definition" "cal_ai" {
   network_mode             = "awsvpc"
   requires_compatibilities = ["FARGATE"]
   cpu                      = "256"  # 0.25 vCPU
-  memory                   = "512"  # 0.5 GB
+  memory                   = "1024" # 1 GB (langchain + agent needs breathing room)
   execution_role_arn       = aws_iam_role.ecs_execution.arn
   task_role_arn            = aws_iam_role.ecs_task.arn
 
