@@ -1,5 +1,7 @@
 from datetime import datetime
-from config import DAY_START_HOUR, DAY_END_HOUR, BUFFER_MINUTES
+
+from config import BUFFER_MINUTES, DAY_END_HOUR, DAY_START_HOUR
+
 
 def get_system_prompt() -> str:
     today = datetime.now().strftime("%Y-%m-%d")
