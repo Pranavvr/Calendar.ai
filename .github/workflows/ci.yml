@@ -18,8 +18,10 @@ jobs:
         with:
           python-version: "3.12"
 
+      # Pinned: an unpinned ruff silently adopts new default rules on each
+      # release, so CI can go red without a code change. Keep in sync with local.
       - name: Install ruff
-        run: pip install ruff
+        run: pip install ruff==0.15.9
 
       - name: Run lint
         run: ruff check .
