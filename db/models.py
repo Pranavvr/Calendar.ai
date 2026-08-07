@@ -17,6 +17,10 @@ class User(Base):
     email:       Mapped[str]         = mapped_column(Text, unique=True, nullable=False)
     name:        Mapped[str | None]  = mapped_column(Text)
     picture_url: Mapped[str | None]  = mapped_column(Text)
+    # IANA name (e.g. "Europe/Berlin") read from the user's primary Google
+    # Calendar at login. Nullable: if that lookup fails we fall back to
+    # config.TIMEZONE rather than blocking sign-in.
+    timezone:    Mapped[str | None]  = mapped_column(Text)
     created_at:  Mapped[datetime]    = mapped_column(server_default=func.now(), nullable=False)
     updated_at:  Mapped[datetime]    = mapped_column(server_default=func.now(), onupdate=func.now(), nullable=False)
 
