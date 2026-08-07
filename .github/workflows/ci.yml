@@ -17,11 +17,15 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
 
-      # Pinned: an unpinned ruff silently adopts new default rules on each
-      # release, so CI can go red without a code change. Keep in sync with local.
+      # The pin is read from the lockfile rather than written here as well, so
+      # the version lives in exactly one place. An unpinned install picked up
+      # ruff 0.16.1, which promoted new rules into its defaults and turned CI
+      # red with no code change.
       - name: Install ruff
-        run: pip install ruff==0.15.9
+        run: grep '^ruff==' requirements-dev.txt | xargs pip install
 
       - name: Run lint
         run: ruff check .
@@ -38,9 +42,13 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: pip
+          cache-dependency-path: |
+            requirements.txt
+            requirements-dev.txt
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        run: pip install -r requirements.txt -r requirements-dev.txt
 
       - name: Run tests
         run: python -m pytest tests/ -v
@@ -53,5 +61,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v5
 
+      # Fargate runs x86, so build the platform that actually ships.
       - name: Build Docker image
-        run: docker build -t cal-ai .
+        run: docker build --platform linux/amd64 -t cal-ai .
+
+      - name: Verify the image runs as non-root
+        run: |
+          uid=$(docker run --rm --entrypoint id cal-ai -u)
+          echo "container uid: $uid"
+          test "$uid" != "0"
+
+      - name: Verify zoneinfo is available in the image
+        run: |
+          docker run --rm --entrypoint python cal-ai -c \
+            "from zoneinfo import ZoneInfo; print(ZoneInfo('America/New_York'))"

@@ -1,11 +1,40 @@
-.venv/
+# Secrets — must never enter an image layer, where they persist even if a later
+# layer deletes them.
 .env
+.env.example
 token.json
+token-from-ec2-backup.json
 credentials.json
+
+# Local environments and caches
+.venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+
+# VCS and tooling
 .git/
 .gitignore
+.github/
+.claude/
+CLAUDE.md
+
+# Infrastructure: applied from a laptop, not from inside the container. Also
+# keeps terraform state and provider binaries (~500MB) out of the build context.
+terraform/
+deploy.sh
+destroy.sh
+
+# Not needed at runtime
 notebooks/
 *.ipynb
-.pytest_cache/
+tests/
+docs/
+README.md
+requirements.in
+requirements-dev.in
+requirements-dev.txt
+ruff.toml
+docker-compose.yml
