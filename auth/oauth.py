@@ -6,6 +6,7 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auth.google_auth import fetch_primary_timezone
 from auth.jwt import JWT_TTL_HOURS, SESSION_COOKIE_NAME, create_session_token
 from db.models import GoogleCredentials, User
 from db.session import get_db
@@ -60,6 +61,11 @@ async def callback(request: Request, db: AsyncSession = Depends(get_db)):
             detail="Google did not return a refresh_token. Revoke app access in your Google account settings and try again.",
         )
 
+    # Read the user's calendar timezone while we still hold a fresh access
+    # token. Returns None on failure, which is not fatal — scheduling falls
+    # back to config.TIMEZONE.
+    calendar_tz = await fetch_primary_timezone(token.get("access_token", ""))
+
     result = await db.execute(select(User).where(User.google_sub == userinfo["sub"]))
     user = result.scalar_one_or_none()
 
@@ -69,6 +75,7 @@ async def callback(request: Request, db: AsyncSession = Depends(get_db)):
             email=userinfo["email"],
             name=userinfo.get("name"),
             picture_url=userinfo.get("picture"),
+            timezone=calendar_tz,
         )
         db.add(user)
         await db.flush()
@@ -76,6 +83,10 @@ async def callback(request: Request, db: AsyncSession = Depends(get_db)):
         user.email = userinfo["email"]
         user.name = userinfo.get("name")
         user.picture_url = userinfo.get("picture")
+        # Refresh on each login so a user who moves gets picked up, but never
+        # overwrite a known-good value with a failed lookup.
+        if calendar_tz:
+            user.timezone = calendar_tz
 
     await db.merge(GoogleCredentials(
         user_id=user.id,

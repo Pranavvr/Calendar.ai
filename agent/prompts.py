@@ -1,11 +1,15 @@
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
-from config import BUFFER_MINUTES, DAY_END_HOUR, DAY_START_HOUR
+from config import BUFFER_MINUTES, DAY_END_HOUR, DAY_START_HOUR, TIMEZONE
 
 
-def get_system_prompt() -> str:
-    today = datetime.now().strftime("%Y-%m-%d")
-    
+def get_system_prompt(timezone_name: str = TIMEZONE) -> str:
+    # Must be the user's zone, not the container's. Fargate runs UTC, so a naive
+    # datetime.now() rolls over to tomorrow at 8pm for a US Eastern user and the
+    # model then schedules "today" onto the wrong date.
+    today = datetime.now(ZoneInfo(timezone_name)).strftime("%Y-%m-%d")
+
     return f"""You are a smart calendar scheduling assistant.
 
 Today's date is {today}.

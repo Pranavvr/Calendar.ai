@@ -11,7 +11,7 @@ from typing_extensions import TypedDict
 
 from agent.prompts import get_system_prompt
 from config import MODEL_NAME
-from tools.calendar_tools import make_calendar_tools_for_user
+from tools.calendar_tools import make_calendar_tools_for_user, resolve_user_timezone
 
 
 class AgentState(TypedDict):
@@ -25,13 +25,17 @@ async def make_agent(user_id: uuid.UUID, db: AsyncSession):
     The tools are pre-bound to a Google Calendar client built from the user's
     refresh_token, so the LLM doesn't see (or need) the user identity.
     """
-    tools = await make_calendar_tools_for_user(user_id, db)
+    # Resolved once and shared, so the tools and the prompt cannot disagree
+    # about what "today" means.
+    timezone_name = await resolve_user_timezone(user_id, db)
+
+    tools = await make_calendar_tools_for_user(user_id, db, timezone_name)
     llm = ChatOpenAI(model=MODEL_NAME).bind_tools(tools)
 
     def agent_node(state: AgentState):
         messages = state["messages"]
         if not messages or not isinstance(messages[0], SystemMessage):
-            messages = [SystemMessage(content=get_system_prompt())] + messages
+            messages = [SystemMessage(content=get_system_prompt(timezone_name))] + messages
         response = llm.invoke(messages)
         return {"messages": [response]}
 
