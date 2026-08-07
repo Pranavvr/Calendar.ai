@@ -9,10 +9,14 @@ __pycache__/
 *.egg-info/
 .DS_Store
 
-# Local-only notebook drafts (not for git history)
-notebooks/cloud-architecture.md
-notebooks/langgraph-fundamentals.md
-notebooks/phase-1-concepts.md
+# Local-only notebook drafts (not for git history).
+# Personal learning notes, not project artifacts — ignore the whole class rather
+# than listing each one as it appears.
+notebooks/*.md
+
+# Claude Code: shared project config IS tracked (.claude/settings.json, agents,
+# skills, hooks). Personal overrides are not.
+.claude/settings.local.json
 
 # Terraform local state and provider cache
 terraform/.terraform/
