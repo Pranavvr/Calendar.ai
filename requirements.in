@@ -1,0 +1,37 @@
+# Direct production dependencies. Edit this file, not requirements.txt.
+#
+# requirements.txt is the generated lockfile: every transitive dependency
+# pinned to an exact version. Regenerate with:
+#     .venv/bin/pip-compile requirements.in
+#
+# Why locked: an unpinned `pip install ruff` picked up 0.16.1, which promoted
+# new rules into its defaults and turned CI red with no code change. The same
+# class of surprise from langchain or fastapi would break production, not just
+# the lint gate.
+
+# --- agent ---
+langgraph
+langchain-core
+langchain-openai
+
+# --- google calendar ---
+google-api-python-client
+google-auth
+
+# --- web ---
+fastapi
+uvicorn
+authlib
+itsdangerous   # required by starlette's SessionMiddleware, not imported directly
+httpx          # authlib's async HTTP client
+
+# --- database ---
+sqlalchemy[asyncio]
+asyncpg        # driver behind the postgresql+asyncpg:// URL, not imported directly
+alembic        # kept in the runtime image so migrations can run as a pre-deploy task
+
+# --- config ---
+python-dotenv
+tzdata         # zoneinfo falls back to this when the base image ships no system
+               # tz database. Scheduling is timezone-critical, so do not rely on
+               # the image happening to include /usr/share/zoneinfo.

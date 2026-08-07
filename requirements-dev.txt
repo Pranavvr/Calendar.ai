@@ -1,0 +1,13 @@
+# GENERATED LOCKFILE — do not edit by hand.
+#
+# Development and CI only; never installed into the runtime image.
+# Edit requirements-dev.in and regenerate:
+#
+#     .venv/bin/pip-compile requirements-dev.in
+
+iniconfig==2.3.0
+packaging==26.0
+pluggy==1.6.0
+pygments==2.19.2
+pytest==9.0.2
+ruff==0.15.9

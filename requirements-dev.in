@@ -1,0 +1,25 @@
+# Direct development dependencies — what tests and CI need. Edit this file,
+# not requirements-dev.txt.
+#
+# Regenerate the lockfile with:
+#     .venv/bin/pip-compile requirements-dev.in
+#
+# Never installed into the runtime image; the Dockerfile installs only
+# requirements.txt.
+
+-c requirements.txt   # never resolve a shared dependency to a version prod does not use
+
+pytest
+ruff==0.15.9   # pinned exactly, and CI reads this pin from the lockfile rather
+               # than hardcoding it a second time
+
+# Deliberately not listed:
+#
+#   jupyter   — a personal tool for the notebooks, which are gitignored learning
+#               notes. CI never runs them, and locking it here would add ~60
+#               packages to every CI install. Install locally when needed:
+#                   .venv/bin/pip install jupyter
+#
+#   pip-tools — it is the tool that generates these lockfiles, so locking it
+#               with itself is circular. Install directly:
+#                   .venv/bin/pip install pip-tools
