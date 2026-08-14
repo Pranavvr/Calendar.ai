@@ -67,16 +67,53 @@ echo "=== [3/5] Full terraform apply (RDS creation takes ~5-10 min) ==="
 cd "$TERRAFORM_DIR"
 terraform apply -auto-approve
 
-# --- Step 4: Run alembic migration against the freshly-created RDS ---
+# --- Step 4: Run alembic migration as a one-off ECS task ---
+#
+# Previously this ran alembic from the laptop, which required
+# publicly_accessible = true on RDS — a database exposed to the internet with
+# only a security group in front, permanently, despite being commented
+# "temporary". The database is now private, so migrations run inside the VPC in
+# the same image and task definition as the app. This is why alembic is kept in
+# the runtime image.
 echo ""
-echo "=== [4/5] Running alembic migration against RDS ==="
-DB_URL_SECRET_ARN=$(terraform output -raw database_url_secret_arn)
-DATABASE_URL=$(aws --profile "$AWS_PROFILE" secretsmanager get-secret-value \
-    --secret-id "$DB_URL_SECRET_ARN" \
-    --query SecretString --output text)
+echo "=== [4/5] Running alembic migration as an ECS task ==="
 
-cd "$PROJECT_ROOT"
-DATABASE_URL="$DATABASE_URL" .venv/bin/alembic upgrade head
+CLUSTER=$(terraform output -raw ecs_cluster_name)
+TASK_DEF=$(terraform output -raw ecs_task_definition_arn)
+SUBNETS=$(terraform output -json ecs_subnet_ids | tr -d '[]" ' )
+TASK_SG=$(terraform output -raw ecs_task_security_group_id)
+
+MIGRATION_TASK_ARN=$(aws --profile "$AWS_PROFILE" ecs run-task \
+    --cluster "$CLUSTER" \
+    --task-definition "$TASK_DEF" \
+    --launch-type FARGATE \
+    --network-configuration "awsvpcConfiguration={subnets=[${SUBNETS}],securityGroups=[${TASK_SG}],assignPublicIp=ENABLED}" \
+    --overrides '{"containerOverrides":[{"name":"'"${TF_VAR_project_name:-cal-ai}"'","command":["python","-m","alembic","upgrade","head"]}]}' \
+    --query 'tasks[0].taskArn' --output text)
+
+if [ -z "$MIGRATION_TASK_ARN" ] || [ "$MIGRATION_TASK_ARN" = "None" ]; then
+    echo "ERROR: failed to start the migration task."
+    exit 1
+fi
+
+echo "Migration task: $MIGRATION_TASK_ARN"
+echo "Waiting for it to finish..."
+aws --profile "$AWS_PROFILE" ecs wait tasks-stopped \
+    --cluster "$CLUSTER" --tasks "$MIGRATION_TASK_ARN"
+
+# A stopped task is not a successful one — check the container's exit code, or a
+# failed migration would pass silently and the app would start against an
+# out-of-date schema.
+MIGRATION_EXIT=$(aws --profile "$AWS_PROFILE" ecs describe-tasks \
+    --cluster "$CLUSTER" --tasks "$MIGRATION_TASK_ARN" \
+    --query 'tasks[0].containers[0].exitCode' --output text)
+
+if [ "$MIGRATION_EXIT" != "0" ]; then
+    echo "ERROR: migration task exited with code $MIGRATION_EXIT."
+    echo "Logs: aws --profile $AWS_PROFILE logs tail /ecs/${TF_VAR_project_name:-cal-ai} --since 10m"
+    exit 1
+fi
+echo "Migration applied."
 
 # --- Step 5: Print URLs + reminder ---
 cd "$TERRAFORM_DIR"

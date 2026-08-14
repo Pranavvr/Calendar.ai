@@ -38,12 +38,6 @@ data "aws_subnets" "default" {
   }
 }
 
-# The IP of the machine running Terraform — used to allow this laptop into
-# the RDS security group for the initial alembic migration.
-data "http" "my_ip" {
-  url = "https://checkip.amazonaws.com/"
-}
-
-locals {
-  my_cidr = "${chomp(data.http.my_ip.response_body)}/32"
-}
+# The my_ip data source and my_cidr local were removed with the RDS laptop
+# ingress rule. They were the only consumer, and every plan made an outbound HTTP
+# call to discover an address that is no longer used for anything.

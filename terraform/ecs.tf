@@ -84,6 +84,12 @@ resource "aws_ecs_service" "cal_ai" {
     container_port   = 8000
   }
 
+  # Replaces the psql-from-laptop access that publicly_accessible = true used to
+  # allow. `aws ecs execute-command` opens a shell inside the running task, which
+  # is inside the VPC and can reach RDS — without exposing the database to the
+  # internet. Auditable via SSM session history, unlike a direct connection.
+  enable_execute_command = true
+
   # ALB needs to be listening before ECS attaches; explicit dep.
   depends_on = [aws_lb_listener.http]
 
