@@ -27,6 +27,36 @@ resource "aws_secretsmanager_secret" "session_secret" {
   recovery_window_in_days = 0
 }
 
+# Key for encrypting stored Google refresh tokens.
+#
+# Deliberately separate from jwt_secret: rotating session signing should not
+# invalidate every user's stored calendar authorization, and vice versa.
+#
+# Fernet requires exactly 32 bytes, url-safe base64 encoded. random_password
+# with special=false yields 32 ASCII bytes; base64encode produces standard
+# base64, so + and / are translated to the url-safe alphabet.
+resource "random_password" "token_encryption_key" {
+  length  = 32
+  special = false
+}
+
+locals {
+  token_encryption_key = replace(
+    replace(base64encode(random_password.token_encryption_key.result), "+", "-"),
+    "/", "_"
+  )
+}
+
+resource "aws_secretsmanager_secret" "token_encryption_key" {
+  name                    = "${var.project_name}/token-encryption-key"
+  recovery_window_in_days = 0
+}
+
+resource "aws_secretsmanager_secret_version" "token_encryption_key" {
+  secret_id     = aws_secretsmanager_secret.token_encryption_key.id
+  secret_string = local.token_encryption_key
+}
+
 resource "aws_secretsmanager_secret_version" "session_secret" {
   secret_id     = aws_secretsmanager_secret.session_secret.id
   secret_string = random_password.session_secret.result

@@ -15,10 +15,15 @@ from sqlalchemy.ext.asyncio import AsyncSession  # noqa: E402
 from starlette.middleware.sessions import SessionMiddleware  # noqa: E402
 
 from agent.graph import make_agent  # noqa: E402
+from api.rate_limit import SlidingWindowRateLimiter  # noqa: E402
 from auth.google_auth import GoogleCredentialsError  # noqa: E402
 from auth.jwt import get_current_user_id  # noqa: E402
 from auth.oauth import router as oauth_router  # noqa: E402
-from config import RECURSION_LIMIT  # noqa: E402
+from config import (  # noqa: E402
+    RECURSION_LIMIT,
+    SCHEDULE_RATE_LIMIT_REQUESTS,
+    SCHEDULE_RATE_LIMIT_WINDOW_SECONDS,
+)
 from db.models import User  # noqa: E402
 from db.session import get_db  # noqa: E402
 from observability import (  # noqa: E402
@@ -31,6 +36,11 @@ from observability import (  # noqa: E402
 
 configure_logging()
 logger = logging.getLogger(__name__)
+
+schedule_limiter = SlidingWindowRateLimiter(
+    max_requests=SCHEDULE_RATE_LIMIT_REQUESTS,
+    window_seconds=SCHEDULE_RATE_LIMIT_WINDOW_SECONDS,
+)
 
 app = FastAPI(title="cal.ai", description="AI calendar scheduling agent")
 
@@ -178,6 +188,19 @@ async def schedule(
     db: AsyncSession = Depends(get_db),
 ):
     user_id_var.set(str(user_id))
+
+    allowed, retry_after = schedule_limiter.check(str(user_id))
+    if not allowed:
+        logger.warning(
+            "schedule.rate_limited",
+            extra={"retry_after_s": round(retry_after, 1)},
+        )
+        raise HTTPException(
+            status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+            detail="Too many scheduling requests. Please wait and try again.",
+            headers={"Retry-After": str(int(retry_after) + 1)},
+        )
+
     started = time.perf_counter()
 
     try:

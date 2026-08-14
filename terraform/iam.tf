@@ -41,6 +41,7 @@ resource "aws_iam_policy" "ecs_read_secrets" {
         aws_secretsmanager_secret.google_redirect_uri.arn,
         aws_secretsmanager_secret.openai_api_key.arn,
         aws_secretsmanager_secret.database_url.arn,
+        aws_secretsmanager_secret.token_encryption_key.arn,
       ]
     }]
   })

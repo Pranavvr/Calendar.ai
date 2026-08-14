@@ -1,17 +1,29 @@
 # Security groups for the three layers.
 
-# ALB SG — allow inbound HTTP from anywhere (Internet), all outbound.
+# CloudFront's published origin-facing IP ranges, as an AWS-managed prefix list.
+# Managed rather than hardcoded because these ranges change; AWS keeps the list
+# current.
+data "aws_ec2_managed_prefix_list" "cloudfront_origin_facing" {
+  name = "com.amazonaws.global.cloudfront.origin-facing"
+}
+
+# ALB SG — reachable only from CloudFront.
+#
+# Previously this allowed 0.0.0.0/0 on port 80. CloudFront redirects viewers to
+# HTTPS, but nothing forced traffic through CloudFront: the ALB's own DNS name
+# was directly reachable over plain HTTP, so the session cookie could be sent in
+# cleartext and the TLS termination bypassed entirely.
 resource "aws_security_group" "alb" {
   name        = "${var.project_name}-alb-sg"
-  description = "Allow inbound HTTP from Internet to the ALB"
+  description = "Allow inbound HTTP to the ALB from CloudFront edge locations only"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
-    description = "HTTP from Internet"
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    description     = "HTTP from CloudFront edges only"
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    prefix_list_ids = [data.aws_ec2_managed_prefix_list.cloudfront_origin_facing.id]
   }
 
   egress {

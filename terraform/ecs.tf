@@ -39,13 +39,14 @@ resource "aws_ecs_task_definition" "cal_ai" {
 
     # Env vars pulled from Secrets Manager at container start.
     secrets = [
-      { name = "DATABASE_URL",         valueFrom = aws_secretsmanager_secret.database_url.arn },
-      { name = "JWT_SECRET",           valueFrom = aws_secretsmanager_secret.jwt_secret.arn },
-      { name = "SESSION_SECRET",       valueFrom = aws_secretsmanager_secret.session_secret.arn },
-      { name = "GOOGLE_CLIENT_ID",     valueFrom = aws_secretsmanager_secret.google_client_id.arn },
+      { name = "DATABASE_URL", valueFrom = aws_secretsmanager_secret.database_url.arn },
+      { name = "JWT_SECRET", valueFrom = aws_secretsmanager_secret.jwt_secret.arn },
+      { name = "SESSION_SECRET", valueFrom = aws_secretsmanager_secret.session_secret.arn },
+      { name = "GOOGLE_CLIENT_ID", valueFrom = aws_secretsmanager_secret.google_client_id.arn },
       { name = "GOOGLE_CLIENT_SECRET", valueFrom = aws_secretsmanager_secret.google_client_secret.arn },
-      { name = "GOOGLE_REDIRECT_URI",  valueFrom = aws_secretsmanager_secret.google_redirect_uri.arn },
-      { name = "OPENAI_API_KEY",       valueFrom = aws_secretsmanager_secret.openai_api_key.arn },
+      { name = "GOOGLE_REDIRECT_URI", valueFrom = aws_secretsmanager_secret.google_redirect_uri.arn },
+      { name = "OPENAI_API_KEY", valueFrom = aws_secretsmanager_secret.openai_api_key.arn },
+      { name = "TOKEN_ENCRYPTION_KEY", valueFrom = aws_secretsmanager_secret.token_encryption_key.arn },
     ]
 
     # Plain env vars (non-secret).

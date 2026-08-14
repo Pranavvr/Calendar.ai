@@ -11,6 +11,14 @@ JWT_TTL_HOURS = int(os.environ.get("JWT_TTL_HOURS", "168"))  # 7 days
 # Distinct from Starlette SessionMiddleware's "session" cookie used for OAuth state.
 SESSION_COOKIE_NAME = "cal_ai_session"
 
+# Send the session cookie over HTTPS only. Defaults to on: the failure mode of
+# forgetting to enable it in production (a 7-day token granting calendar access
+# sent in cleartext) is far worse than the failure mode of forgetting to disable
+# it locally (no session over plain-HTTP localhost).
+COOKIE_SECURE = os.environ.get("COOKIE_SECURE", "true").lower() not in {
+    "false", "0", "no",
+}
+
 
 def create_session_token(user_id: uuid.UUID) -> str:
     now = datetime.now(timezone.utc)

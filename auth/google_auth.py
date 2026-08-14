@@ -9,6 +9,7 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auth.crypto import TokenDecryptionError, decrypt_token
 from db.models import GoogleCredentials
 
 logger = logging.getLogger(__name__)
@@ -71,9 +72,16 @@ async def get_calendar_service_for_user(user_id: uuid.UUID, db: AsyncSession):
         logger.warning("auth.no_stored_credentials")
         raise GoogleCredentialsError("No Google credentials stored for this user")
 
+    try:
+        refresh_token = decrypt_token(creds_row.refresh_token)
+    except TokenDecryptionError as e:
+        raise GoogleCredentialsError(
+            "Stored Google credentials are unreadable; sign in again"
+        ) from e
+
     credentials = Credentials(
         token=None,
-        refresh_token=creds_row.refresh_token,
+        refresh_token=refresh_token,
         token_uri=GOOGLE_TOKEN_URI,
         client_id=os.environ["GOOGLE_CLIENT_ID"],
         client_secret=os.environ["GOOGLE_CLIENT_SECRET"],

@@ -7,8 +7,14 @@ from fastapi.responses import RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from auth.crypto import encrypt_token
 from auth.google_auth import fetch_primary_timezone
-from auth.jwt import JWT_TTL_HOURS, SESSION_COOKIE_NAME, create_session_token
+from auth.jwt import (
+    COOKIE_SECURE,
+    JWT_TTL_HOURS,
+    SESSION_COOKIE_NAME,
+    create_session_token,
+)
 from db.models import GoogleCredentials, User
 from db.session import get_db
 
@@ -99,7 +105,7 @@ async def callback(request: Request, db: AsyncSession = Depends(get_db)):
 
     await db.merge(GoogleCredentials(
         user_id=user.id,
-        refresh_token=refresh_token,
+        refresh_token=encrypt_token(refresh_token),
         scope=token.get("scope", ""),
     ))
     await db.commit()
@@ -119,7 +125,7 @@ async def callback(request: Request, db: AsyncSession = Depends(get_db)):
         key=SESSION_COOKIE_NAME,
         value=session_token,
         httponly=True,
-        secure=False,
+        secure=COOKIE_SECURE,
         samesite="lax",
         max_age=JWT_TTL_HOURS * 3600,
     )
@@ -129,5 +135,12 @@ async def callback(request: Request, db: AsyncSession = Depends(get_db)):
 @router.post("/logout")
 async def logout():
     response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
-    response.delete_cookie(SESSION_COOKIE_NAME)
+    # Attributes must match those used when setting it, or the browser will not
+    # consider it the same cookie and the session survives "logout".
+    response.delete_cookie(
+        SESSION_COOKIE_NAME,
+        httponly=True,
+        secure=COOKIE_SECURE,
+        samesite="lax",
+    )
     return response
