@@ -17,6 +17,14 @@ resource "aws_cloudfront_distribution" "cal_ai" {
     domain_name = aws_lb.cal_ai.dns_name
     origin_id   = "cal-ai-alb"
 
+    # Proves to the ALB that a request came from this distribution rather than
+    # from any CloudFront distribution inside the allowed IP ranges. The ALB
+    # listener returns 403 without it.
+    custom_header {
+      name  = "X-Origin-Verify"
+      value = random_password.origin_verify.result
+    }
+
     custom_origin_config {
       http_port              = 80
       https_port             = 443
