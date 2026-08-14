@@ -1,3 +1,4 @@
+import logging
 import re
 import uuid
 from datetime import date as _Date
@@ -10,6 +11,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from auth.google_auth import get_calendar_service_for_user
 from config import BUFFER_MINUTES, DAY_END_HOUR, DAY_START_HOUR, TIMEZONE
 from db.models import User
+
+logger = logging.getLogger(__name__)
 
 MINUTES_PER_DAY = 24 * 60
 
@@ -149,6 +152,9 @@ def make_calendar_tools(service, timezone_name: str = TIMEZONE):
         except ValueError:
             return f"Error: invalid date format '{date}'. Use YYYY-MM-DD."
         except Exception as e:
+            # The string return keeps the agent loop alive, but without a log the
+            # failure is invisible: the model just sees an error and moves on.
+            logger.exception("tool.get_calendar_events_failed", extra={"date": date})
             return f"Error accessing calendar: {str(e)}"
 
     @tool
@@ -199,6 +205,7 @@ def make_calendar_tools(service, timezone_name: str = TIMEZONE):
         except ValueError:
             return f"Error: invalid date format '{date}'. Use YYYY-MM-DD."
         except Exception as e:
+            logger.exception("tool.get_free_slots_failed", extra={"date": date})
             return f"Error getting free slots: {str(e)}"
 
     @tool
@@ -252,11 +259,18 @@ def make_calendar_tools(service, timezone_name: str = TIMEZONE):
                 body=event,
             ).execute()
 
+            # Event titles come from the user's request, so log only the shape
+            # of what was created, not its content.
+            logger.info(
+                "tool.event_created",
+                extra={"date": date, "start": start_time, "end": end_time},
+            )
             return f"Created '{title}' on {date} from {start_time} to {end_time}."
 
         except ValueError as e:
             return f"Error: invalid date or time format. {str(e)}"
         except Exception as e:
+            logger.exception("tool.create_event_failed", extra={"date": date})
             return f"Error creating event: {str(e)}"
 
     return [get_calendar_events, get_free_slots, create_calendar_event]
