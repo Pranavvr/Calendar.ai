@@ -71,9 +71,14 @@ noise. If a change would alter one, say so explicitly and explain the cost delta
 - CloudWatch log retention of 7 days
 - Local Terraform state
 
-Genuine gaps that are *not* on this list are fair game — unpinned dependencies, the
-timezone bug, plaintext refresh tokens, `secure=False` on the session cookie, RDS backups
-being disabled, and the absence of logging are all real and unresolved.
+Each of these is written up in `docs/adr/` with the constraint that forced it and the
+condition that would change it. Read the relevant record before proposing a change to one.
+
+Genuine gaps not on that list are fair game. Currently open: no Dependabot, so pinned
+dependencies get no security updates (ADR 0008); `POST /schedule` is synchronous with a
+timeout at expected latency (ADR 0003); sessions cannot be revoked before expiry
+(ADR 0005); evals cost money so behaviour regressions are not caught in CI (ADR 0010);
+and `Environment` is still a hardcoded tag rather than a variable (ADR 0001).
 
 ## Git
 
