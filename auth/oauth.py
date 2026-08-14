@@ -1,3 +1,4 @@
+import logging
 import os
 
 from authlib.integrations.starlette_client import OAuth
@@ -10,6 +11,8 @@ from auth.google_auth import fetch_primary_timezone
 from auth.jwt import JWT_TTL_HOURS, SESSION_COOKIE_NAME, create_session_token
 from db.models import GoogleCredentials, User
 from db.session import get_db
+
+logger = logging.getLogger(__name__)
 
 GOOGLE_REDIRECT_URI = os.environ["GOOGLE_REDIRECT_URI"]
 
@@ -42,9 +45,13 @@ async def callback(request: Request, db: AsyncSession = Depends(get_db)):
     try:
         token = await oauth.google.authorize_access_token(request)
     except Exception as e:
+        # The exception text can contain the authorization code and provider
+        # detail, so log the type and return a generic message rather than
+        # echoing upstream errors to the caller.
+        logger.warning("auth.callback_failed", extra={"error_type": type(e).__name__})
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"OAuth callback failed: {e}",
+            detail="Sign-in failed. Please try again.",
         )
 
     userinfo = token.get("userinfo")
@@ -68,6 +75,8 @@ async def callback(request: Request, db: AsyncSession = Depends(get_db)):
 
     result = await db.execute(select(User).where(User.google_sub == userinfo["sub"]))
     user = result.scalar_one_or_none()
+
+    is_new_user = user is None
 
     if user is None:
         user = User(
@@ -94,6 +103,15 @@ async def callback(request: Request, db: AsyncSession = Depends(get_db)):
         scope=token.get("scope", ""),
     ))
     await db.commit()
+
+    logger.info(
+        "auth.login_succeeded",
+        extra={
+            "user_id": str(user.id),
+            "new_user": is_new_user,
+            "timezone": calendar_tz or "fallback",
+        },
+    )
 
     session_token = create_session_token(user.id)
     response = RedirectResponse(url="/", status_code=status.HTTP_302_FOUND)
