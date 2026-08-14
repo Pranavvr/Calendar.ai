@@ -19,7 +19,7 @@ output "ecr_repository_url" {
 }
 
 output "rds_endpoint" {
-  description = "RDS endpoint (host:port). Use for local alembic migrations."
+  description = "RDS endpoint (host:port). Reachable only from inside the VPC."
   value       = "${aws_db_instance.cal_ai.address}:${aws_db_instance.cal_ai.port}"
 }
 
@@ -39,4 +39,21 @@ output "ecs_cluster_name" {
 
 output "ecs_service_name" {
   value = aws_ecs_service.cal_ai.name
+}
+
+# Consumed by deploy.sh to run migrations as a one-off task inside the VPC,
+# now that RDS is not publicly reachable.
+output "ecs_task_definition_arn" {
+  description = "Task definition used for both the service and one-off migration tasks."
+  value       = aws_ecs_task_definition.cal_ai.arn
+}
+
+output "ecs_subnet_ids" {
+  description = "Subnets a one-off task must run in to reach RDS."
+  value       = data.aws_subnets.default.ids
+}
+
+output "ecs_task_security_group_id" {
+  description = "Security group allowed into the RDS security group."
+  value       = aws_security_group.ecs_task.id
 }

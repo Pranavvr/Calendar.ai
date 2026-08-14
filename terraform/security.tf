@@ -58,12 +58,15 @@ resource "aws_security_group" "ecs_task" {
   }
 }
 
-# RDS SG — allow inbound Postgres from:
-#   - the ECS task SG (production access)
-#   - my laptop's IP (initial migration + occasional psql from local)
+# RDS SG — reachable only from the ECS tasks.
+#
+# The laptop-IP ingress rule was removed along with publicly_accessible. It is
+# dead weight once the instance has no public address, and keeping it implied an
+# access path that no longer exists. Administrative access now goes through
+# `aws ecs execute-command` into a running task, which is inside the VPC.
 resource "aws_security_group" "rds" {
   name        = "${var.project_name}-rds-sg"
-  description = "Allow Postgres from ECS tasks and from my laptop for admin"
+  description = "Allow Postgres from ECS tasks only"
   vpc_id      = data.aws_vpc.default.id
 
   ingress {
@@ -72,14 +75,6 @@ resource "aws_security_group" "rds" {
     to_port         = 5432
     protocol        = "tcp"
     security_groups = [aws_security_group.ecs_task.id]
-  }
-
-  ingress {
-    description = "Postgres from my laptop (initial migration, local admin)"
-    from_port   = 5432
-    to_port     = 5432
-    protocol    = "tcp"
-    cidr_blocks = [local.my_cidr]
   }
 
   egress {

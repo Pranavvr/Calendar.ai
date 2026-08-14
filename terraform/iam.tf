@@ -53,8 +53,9 @@ resource "aws_iam_role_policy_attachment" "ecs_execution_read_secrets" {
 }
 
 # ----- Task role -----
-# Empty for now; container makes no AWS SDK calls at runtime.
-# When we later add S3/SES/etc., grant here.
+# The container makes no AWS SDK calls of its own. The only permissions here are
+# the SSM channel ECS Exec needs, which replaced exposing RDS to the internet
+# for administrative access.
 
 resource "aws_iam_role" "ecs_task" {
   name = "${var.project_name}-ecs-task-role"
@@ -66,4 +67,33 @@ resource "aws_iam_role" "ecs_task" {
       Action    = "sts:AssumeRole"
     }]
   })
+}
+
+# ECS Exec works by having the agent inside the task open an SSM message channel.
+# Without these the service accepts enable_execute_command but every
+# execute-command call fails.
+resource "aws_iam_policy" "ecs_exec" {
+  name        = "${var.project_name}-ecs-exec"
+  description = "Allow ECS Exec to open an SSM session into a running task"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Effect = "Allow"
+      Action = [
+        "ssmmessages:CreateControlChannel",
+        "ssmmessages:CreateDataChannel",
+        "ssmmessages:OpenControlChannel",
+        "ssmmessages:OpenDataChannel",
+      ]
+      # These actions are not resource-scopable: the channel does not exist
+      # until it is created, so there is no ARN to name.
+      Resource = "*"
+    }]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "ecs_task_exec" {
+  role       = aws_iam_role.ecs_task.name
+  policy_arn = aws_iam_policy.ecs_exec.arn
 }

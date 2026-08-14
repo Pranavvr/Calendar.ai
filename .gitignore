@@ -9,6 +9,12 @@ __pycache__/
 *.egg-info/
 .DS_Store
 
+# File-sync duplicates. This working copy lives under Desktop, which is synced,
+# and the sync creates byte-identical "name 2.py" copies. pytest collects the
+# duplicated test files, which silently inflates the test count.
+* 2.*
+* 3.*
+
 # Local-only notebook drafts (not for git history).
 # Personal learning notes, not project artifacts — ignore the whole class rather
 # than listing each one as it appears.
